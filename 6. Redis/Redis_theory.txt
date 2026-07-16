@@ -1,0 +1,44 @@
+REDIS FOR DISCORD.JS
+Redis works because every slash command can trigger a database check  making the MongoDB database slow down or crash.
+Redis solves that by acting as an in-memory data store.
+
+MONGODB vs. REDIS
+MongoDB (Hard Drive) ──> Long-Term Storage (Persistent, slower)
+Redis   (RAM)        ──> Short-Term Storage (Temporary, blazing fast)
+
+THE REDIS CACHE LAYER WORKFLOW
+Instead of talking to MongoDB directly for every single action, the bot uses Redis as a protective shield.
+Example /daily
+    User runs /daily 
+    │
+    ▼
+    Check Redis Cache ──[ Has cooldown key? ]──( Yes )──> Reject Command (Fast)
+    │
+    ( No )
+    │
+    ▼
+    Allow Command
+    │
+    ▼
+    Update MongoDB (Add coins to profile)
+    │
+    ▼
+    Save Cooldown Key in Redis (Set to expire in 24 hours automatically)
+
+COMMON REDIS USE CASES
+    -Cooldowns: Instead of checking MongoDB to see when a user last ran a command, save a temporary key in Redis that deletes itself after 60 seconds.
+    -Cached Profiles: If a user is actively chatting, keep their profile in Redis. Read from Redis instantly, then save changes back to MongoDB once every few minutes instead of every single second.
+    -Leaderboards: Sorting millions of MongoDB documents to find the top 10 richest users is slow. Redis has a built-in feature called Sorted Sets (ZADD, ZREVRANGE) that maintains a perfectly sorted leaderboard automatically.
+    -Rate Limits: Protect your bot from spam by tracking how many messages a user sent in the last 5 seconds.
+    -Temporary Events: Store dynamic state data, like an ongoing trivia game, a blackjack hand, or a temporary giveaway entry list.
+
+KEY CONCEPTS
+1. Key-value Store: Unlike MongoDB (documents) or SQL (tables), Redis stores everything as simple pairs. You request a specific Key string, and Redis immediately hands you the Value.
+    Key: cooldown:user:123456789:daily
+    Value: true
+2. TTL (Time To Live): Every key in Redis can be given an expiration timer in seconds. Once the timer hits zero, Redis deletes the data automatically. This is perfect for temporary bot states.
+3. Data types:
+    Strings: Plain text or stringified JSON data.
+    Hashes: Small objects (great for temporary user settings).
+    Lists / Sets: Arrays of data (great for tracking active match participants).
+    Sorted Sets: Collections where items are automatically ranked by a numeric score (perfect for global experience leaderboards).

@@ -1,0 +1,53 @@
+GIT FOR DEV PROJECTS
+It's a time machine for the cod. Lets you experiment safely, track every change you make and roll back instantly if a new command crashes the bot. GitHub is the cloud backup and portfolio.
+
+THE GIT LIFECYCLE WORKFLOW
+Working Directory  ──[ git add ]──>  Staging Area  ──[ git commit ]──>  Local Repository  ──[ git push ]──>  GitHub
+    Working Directory: The actual folder on your computer where you edit your bot's files (e.g., index.js).
+    Staging Area: A preparation zone. You choose exactly which changes are ready to be saved next.
+    Local Repository: The hidden .git folder on your machine where your saved history lives securely.
+    GitHub: The remote copy of your repository hosted online so your code is backed up and accessible.
+
+ESSENTIAL GIT COMMANDS
+
+Setup & Inspection
+    -git init: Turns the project folder into a git repository.
+    -git clone <url>: Download an existing project from GitHub to your computer.
+    -git status: Shows which files have changes, what is staged and what is untracked.
+    -git log: Displays a scrollable history of all past saved changes (commits).
+    -git diff: Shows line-by-line differences between your current code and your last save.
+Save & Moving Code
+    -git add <file>: Moves specific files or changes into the Staging Area.
+    -git commit -m "message": Saves your staged changes permanently into your local repository history.
+    -git pull: Grabs any newer changes from GitHub and merges them directly into your computer.
+    -git push: Uploads your local saved commits up onto your GitHub repository online.
+Branches
+    -git branch: Lists all branches on your machine or creates a new one.
+    -git switch <branch-name>: Moves your working directory focus from one branch to another.
+    -git merge <branch-name>: Combines changes from another branch in to your current active branch.
+
+CORE GIT & GITHUB CONCEPTS
+
+.gitignore file: text file that tells git which files to completely ignore, example: .env, node_modules/, config.json
+
+Branches: Parallel universes where you can work without affecting the live, stable bot in the main universe.
+
+Semantic Commit: Messages that make the commit history readable. Use prefixes to explain intent:
+    -feat: add slash command for economy balance
+    -fix: solve mongoDB connection timeout issue
+    -docs: update setup instructions in README
+
+Tags & Releases:
+    -Tags: Permanent pointers to a specific moment in your git history, usually marking version milestones (e.g., v1.0.0)
+    -Releases: Specific feature that packages a tagged commit with change logs and downloadable files for users.
+
+THE SOLO DEV BRANCH STRATEGY
+    Use this layout:
+        main (Stable/Live Bot)
+        │
+        develop (Next Update Integration)
+        └── feature/economy (Where you actually write code)
+        └── feature/music
+    1. main: Holds clean, working code. What runs the live bot.
+    2. develop: Staging ground, you merge finished features here to test how they interact.
+    3. feature/*: Short-lived branches created for a single task (e.g., feature/warn-command). Once the feature works completely, merge it to develop and delete it.

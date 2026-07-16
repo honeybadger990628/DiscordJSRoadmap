@@ -1,0 +1,277 @@
+Exercise 01:
+
+export const userObject = {
+    userId : 1,
+    coins : 10000,
+    xp : 0,
+    level : 1,
+    energy : 100,
+    selectedProfession : "miner",
+    professionLevel : {
+        miner: 3,
+        lumberjack: 2,
+        fisherman:2,
+        smith: 1
+    },
+    cooldowns : {
+        mineCooldown : 30_000, //time in ms
+        forgeCooldown : 60_000,
+        claimReward : 1_000
+    },
+    items: []
+};
+
+let {energy, coins, selectedProfession, professionLevel:{miner}} = userObject;
+
+function runExercise01() {
+    console.log(miner);
+}
+
+//If statement to force node js to ignore the results of the exercise
+if (process.argv[1] && process.argv[1].endsWith('exercise-01-userProfile.js')) {
+  runExercise01();
+}
+
+Exercise 02:
+
+const professions = [
+    {id: 1, name:"miner", energyCost: 10, xpReward:10},
+    {id: 2, name:"lumbjerjack", energyCost: 10, xpReward:10},
+    {id: 3, name:"fisherman", energyCost: 8, xpReward:7},
+    {id: 4, name:"smith", energyCost: 9, xpReward:8}
+];
+
+//map profession name
+function getName(item) {
+    return item.name;
+}
+
+/*(const names = professions.map(professions => profession.getName);
+console.log(names);*/
+
+//find miner
+const miner = professions.find(profession => profession.name === "miner");
+console.log(miner);
+
+//filter professions with energyCost >= 10
+const highEnergyProfessions = professions.filter(profession => profession.energyCost >= 10);
+console.log(highEnergyProfessions);
+
+Exercise 03:
+
+export const inventory = [
+    { itemId: "copperOre", quantity:4, category: "ore"},
+    { itemId: "goldOre", quantity:2, category: "ore"},
+    { itemId: "stick", quantity:10, category: "wood"},
+    { itemId: "riverSalmon", quantity:4, category: "fish"}
+];
+
+// Encapsulas las soluciones para que no se ejecuten solas al importar
+function runExercise03() {
+  console.log("--- RESULTS EXERCISE 3 ---");
+  
+  // filter ore items
+  const oreitems = inventory.filter(item => item.category === "ore");
+  console.log(oreitems);
+
+  // find stick
+  const sticks = inventory.find(item => item.itemId === "stick");
+  console.log(sticks);
+
+  // check if user has riversalmon with some
+  const salmon = inventory.some(item => item.itemId === "riverSalmon" && item.quantity > 0);
+  console.log(salmon);
+
+  // check if user has sacredbark with some
+  const sacredb = inventory.some(item => item.itemId === "sacredBark" && item.quantity > 0);
+  console.log(sacredb);
+}
+
+//If statement to force node js to ignore the results of the exercise 3 when importing the inventory to the exercise 4
+if (process.argv[1] && process.argv[1].endsWith('exercise-03-inventory.js')) {
+  runExercise03();
+}
+
+Exercise 04:
+
+//EXERCISE 4:
+import { inventory } from "./exercise-03-inventory.js";
+console.log("Exercise 4 problems solved:")
+//Total Inventory quantity with reduce and generic function
+const quantityResult = inventory.reduce(function (acc, obj) { return acc + obj.quantity;},0); //acc = accumulator, obj = object
+console.log(`Total Inventory Items counted with a generic function: ${quantityResult}`);
+
+//Total Inventory quantity with reduce and arrow function
+const quantityArrowFResult = inventory.reduce((acc, obj) => { return acc + obj.quantity;},0); //acc = accumulator, obj = object
+console.log(`Total Inventory Items counted with an arrow function: ${quantityArrowFResult}`);
+
+//Total ores with only reduce
+const oreReduceOnly = inventory.reduce((acc, obj) => {
+  return obj.category === "ore" ? acc + obj.quantity : acc; //ternary operator ? works as an if, the structure is: condition ? exprIfTrue : exprIfFalse
+}, 0);
+console.log(`Total Ores counted with reduce only: ${oreReduceOnly}`);
+
+
+//Total ores with filter + reduce
+const oreFilter = inventory.filter(item => item.category === "ore");
+const oreFilterReduce = oreFilter.reduce((acc, obj) => { return acc + obj.quantity;},0);
+console.log(`Total Ores counted with filter and reduce: ${oreFilterReduce}`);
+
+Exercise 05:
+
+export function resolveProfessionReward(professionId) {
+    if (professionId === "miner") {
+        return {coinsEarned: 25, xpEarned: 15, items: [{ itemId: "coppperOre", quantity: 2}]};
+    } else if (professionId === "lumberjack") {
+        return {coinsEarned: 18, xpEarned: 12, items: [{ itemId: "sticks", quantity: 3}]};
+    } else if (professionId === "fisherman") {
+        return {coinsEarned: 15, xpEarned: 10, items: [{ itemId: "riverSalmon", quantity: 2}]};
+    } else if (professionId === "smith") {
+        return {coinsEarned: 30, xpEarned: 20, items: [{ itemId: "ironBar", quantity: 1}]};
+    } else {
+        return "Unspecified";
+    }
+}
+
+function runExercise05() {
+    console.log(resolveProfessionReward("miner"));
+    console.log(resolveProfessionReward("lumberjack"));
+    console.log(resolveProfessionReward("fisherman"));
+    console.log(resolveProfessionReward("smith"));
+}
+
+//If statement to force node js to ignore the results of the exercise
+if (process.argv[1] && process.argv[1].endsWith('exercise-05-reward.js')) {
+  runExercise05();
+}
+
+Exercise 06:
+
+import { userObject } from "./exercise-01-userProfile.js";
+import { resolveProfessionReward } from "./exercise-05-reward.js";
+
+export function applyReward(userProfile, reward) {
+    const rewards = resolveProfessionReward(reward);
+    userObject.coins += rewards.coinsEarned;
+    userObject.xp += rewards.xpEarned;
+    userObject.items.push(...rewards.items); //The spread operator (...) appends the object elements individually, pushing regularly adds a nested object
+    console.log(`The user have ${userObject.coins} coins, ${userObject.xp} exp and added ${JSON.stringify(rewards.items)} to the inventory`);
+}
+
+
+Exercise 07:
+
+const now = Date.now();
+const professionWorkCooldownEndsAt = now + 1_0000;
+
+export function isOnCooldown(cooldownEndsAt) {
+    if (Date.now() < cooldownEndsAt) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function getRemainingCooldownMs(cooldownEndsAt) {
+    return Date.now() - cooldownEndsAt;
+}
+
+function runExercise07(){
+    console.log(professionWorkCooldownEndsAt)
+    //Print the status at the moment of running
+    console.log(`The status of the cooldown is: ${isOnCooldown()}`);
+    console.log(getRemainingCooldownMs(professionWorkCooldownEndsAt));
+
+    //Test if the cooldown is still on after 7 secs
+    setTimeout(()=>{console.log(`Cooldown: ${isOnCooldown(professionWorkCooldownEndsAt)}`);}, 7_000);
+}
+
+//If statement to force node js to ignore the results of the exercise
+if (process.argv[1] && process.argv[1].endsWith('exercise-07-cooldowns.js')) {
+  runExercise07();
+}
+
+Exercise 08:
+
+import { userObject } from "./exercise-01-userProfile.js";
+
+const shopItem = {
+    itemId: "healing_herb",
+    buyPrice: 120
+}
+
+function buyItem(userProfile, shopItem, quantity) {
+    const totalCost = shopItem.buyPrice * quantity;
+    if (userProfile.coins >= totalCost) {
+        userProfile.coins -= totalCost;
+        console.log(`The total cost of this transaction is ${totalCost} coins!`)
+        console.log(`The user ${userProfile.userId} bought ${quantity} ${shopItem.itemId} and now has a balance of ${userProfile.coins} coins.`);
+    } else {
+        console.log("The user does not have enough money!")
+    }
+}
+
+buyItem(userObject, shopItem, 5);
+
+Exercise 09:
+
+const inventory = [
+  { itemId: "copper_ore", quantity: 5 },
+  { itemId: "pine_wood", quantity: 2 }
+];
+
+function addItemToInventory(inventory, itemId, quantity) {
+    //We use find to reference the item that exists
+    const existingItem = inventory.find(item => item.itemId === itemId);
+    
+    if (existingItem) {
+        //If exists then we add it the quantity
+        existingItem.quantity += quantity;
+    } else {
+        //If it doesn't exist we add it to the array
+        inventory.push({ itemId, quantity });
+    }
+    
+    return inventory;
+}
+
+const item1 = "copper_ore";
+const item2 = "river_fish"
+
+addItemToInventory(inventory, item1, 3)
+addItemToInventory(inventory, item2, 4)
+
+// We use JSON.stringify or console.dir to force the terminal to show the real content
+console.log("Resultado item1:", JSON.stringify(inventory.filter(item => item.itemId === item1), null, 2));
+console.log("Resultado item2:", JSON.stringify(inventory.filter(item => item.itemId === item2), null, 2));
+
+//Print the whole invenyory to check
+console.log("\nComplete Inventory:");
+console.dir(inventory, { depth: null });
+
+Exercise 10:
+
+import { userObject } from "./exercise-01-userProfile.js";
+import { resolveProfessionReward } from "./exercise-05-reward.js";
+import { applyReward } from "./exercise-06-apply-reward.js";
+import { isOnCooldown } from "./exercise-07-cooldowns.js";
+
+const now = Date.now();
+const professionWorkCooldownEndsAt = now + 1_0000;
+
+function workProfession(userProfile, inventory) {
+    if (userObject.selectedProfession !== "") {
+        if (isOnCooldown(professionWorkCooldownEndsAt)) {
+            return { ok: false, message: "Profession is on cooldown." };
+        } else {
+            return applyReward(userProfile, userObject.selectedProfession);
+        }
+    } else {
+        return { ok: false, message: "No profession selected." };
+    }
+}
+
+// Ejecución de prueba
+const result = workProfession(userObject, 0);
+console.log("Resultado del trabajo:", result);
+

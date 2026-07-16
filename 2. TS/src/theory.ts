@@ -1,0 +1,201 @@
+//Types
+
+//Define a variable
+const var_string:string = "Text";       //Strings can use ' " ` for encapsulating text
+
+const var_bool:boolean = true;
+
+//For the number variables 
+const var_decimal: number = 6;          //Integer
+const var_hex: number = 0xf00d;         // Hexadecimal
+const var_binary: number = 0b1010;      // Binary
+const var_octal: number = 0o744;        // Octal
+const var_float: number = 3.14;         // Floating point
+
+const var_bigNumber = BigInt(9007199254740991); //Numbers larger than 2^53 - 1
+
+//Symbol variables, works as a tag, in this case 'uniqueKey' is a Symbol for a description so it's being used in the object as a key
+const uniqueKey: symbol = Symbol('description');
+const obj = {
+  [uniqueKey]: 'This is a unique property'
+};
+console.log(obj[uniqueKey]); // "This is a unique property"
+
+//Type any is the flexible type, requires let since it's reassignable
+let var_any:any = true;
+var_any = 10;
+
+//In typescript there is undefined and null as well
+const var_undefined: undefined = undefined;
+const var_null: null = null;
+
+//Interfaces
+
+//Way to define shape that an object must follow, instead of defining objects we define something as the interface
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  couponCode?: string; //Optional field of the interface
+  readonly databaseUri?: string; //Can only be assigned when the object is first created
+}
+
+const newUser: User = {
+  id: 1,
+  username: "alice_dev",
+  email: "alice@example.com"
+};
+
+//Interface can define structure for functions and methods
+interface Calculator {
+  add(x: number, y: number): number;
+  subtract: (x: number, y: number) => number; // Alternative syntax
+}
+
+//You can extend interfaces by using extends
+interface Person {
+  name: string;
+}
+
+interface Employee extends Person {
+  employeeId: number;
+}
+
+//Type Alias
+
+//The aliases are used to change a type with an alias
+type CarModel = string;
+const carModel:CarModel = "Corolla";
+
+//Enum
+
+//Special class that represents group of constants.
+
+//Numeric enums, it starts to count increasing its value per element of the enum
+enum Direction {
+  Up,    // 0
+  Down,  // 1
+  Left,  // 2
+  Right  // 3
+}
+
+// Custom initialization
+enum StatusCode {
+  Success = 200,
+  BadRequest = 400,
+  Unauthorized // 401 (auto-increments from 400)
+}
+
+//String enums, can be readed, it does not increment like numerical enums
+enum UserRole {
+  Admin = "ADMIN",
+  Editor = "EDITOR",
+  Viewer = "VIEWER"
+}
+
+let currentRole: UserRole = UserRole.Admin;
+
+//Generics are definitions but using angle brackets for the types of the variables <>
+
+//Generic function
+// The <T> acts as a variable for the type
+function identity<T>(arg: T): T {
+  return arg;
+}
+
+// 1. Explicitly setting the type
+const output1 = identity<string>("Hello World"); 
+
+// 2. Type Inference (TypeScript automatically figures out T is a number)
+const output2 = identity(42); 
+
+//Generic interface and type
+// Reusable API response wrapper
+interface ApiResponse<DataPayload> {
+  status: "success" | "error";
+  timestamp: number;
+  data: DataPayload;
+}
+
+// Usage for User data
+interface UserInt {
+  id: number;
+  name: string;
+}
+
+const userResponse: ApiResponse<UserInt> = {
+  status: "success",
+  timestamp: 1718000000,
+  data: { id: 1, name: "Alice" }
+};
+
+//Generic class
+class Box<T> {
+  private content: T;
+
+  constructor(value: T) {
+    this.content = value;
+  }
+
+  getContent(): T {
+    return this.content;
+  }
+}
+
+const stringBox = new Box("Secret Message"); // Inferred as Box<string>
+
+//UTILITY TYPES
+
+//Partial: Changes all the properties in an object to be optional
+interface Point {
+  x: number;
+  y: number;
+}
+
+let pointPart: Partial<Point> = {}; // `Partial` allows x and y to be optional
+pointPart.x = 10;
+
+//Required changes all the properties in an object to be required
+interface Car {
+  make: string;
+  model: string;
+  mileage?: number;
+}
+
+let myCar: Required<Car> = {
+  make: 'Ford',
+  model: 'Focus',
+  mileage: 12000 // `Required` forces mileage to be defined
+};
+
+//Record defines an object type with a specific key type and value type
+const nameAgeMap: Record<string, number> = {
+  'Alice': 21,
+  'Bob': 25
+};
+
+//Omit removes keys from an object type
+interface Person {
+  name: string;
+  age: number;
+  location?: string;
+}
+
+const bob: Omit<Person, 'age' | 'location'> = {
+  name: 'Bob'
+  // `Omit` has removed age and location from the type and they can't be defined here
+};
+
+//Pick removes everything but the specified keys
+interface Person {
+  name: string;
+  age: number;
+  location?: string;
+}
+
+const bob2: Pick<Person, 'name'> = {
+  name: 'Bob'
+  // `Pick` has only kept name, so age and location were removed from the type and they can't be defined here
+};
+
+//Classes are basically the same as javascript

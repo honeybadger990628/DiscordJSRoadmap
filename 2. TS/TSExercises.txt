@@ -1,0 +1,154 @@
+Exercise 1
+
+export type Profession = 'miner' | 'lumbjerjack' | 'fisherman' | 'smith';
+
+export interface CooldownInfo {
+    endsAt: Date;
+    durationMs: number;
+}
+
+export interface User {
+    readonly userId: number;
+    userName: string;
+    coins: number;
+    xp: number;
+    level: number;
+    energy: number;
+
+    selectedProfession: Profession;
+    professionLevels: Record<Profession, number>;
+    cooldowns: Record<string, CooldownInfo>;
+    inventoryWeight: number;
+}
+
+Exercise 2
+export type ItemCategory = 'ore' | 'wood' | 'fish' | 'tool' | 'consumable';
+
+export interface ItemDefinition {
+    readonly id: number;
+    name: string;
+    category: ItemCategory;
+    buyPrice: number;
+    sellPrice: number;
+    stackable: boolean;
+}
+
+const newItem1:  ItemDefinition = {
+    id: 1,
+    name: 'sticks',
+    category: 'wood',
+    buyPrice: 5,
+    sellPrice: 2,
+    stackable: true
+}
+
+const newItem2:  ItemDefinition = {
+    id: 2,
+    name: 'salmon',
+    category: 'fish',
+    buyPrice: 15,
+    sellPrice: 15,
+    stackable: true
+}
+
+const newItem3:  ItemDefinition = {
+    id: 3,
+    name: 'pickaxe',
+    category: 'tool',
+    buyPrice: 40,
+    sellPrice: 30,
+    stackable: false
+}
+
+const newItem4:  ItemDefinition = {
+    id: 4,
+    name: 'copperOre',
+    category: 'ore',
+    buyPrice: 20,
+    sellPrice: 15,
+    stackable: true
+}
+
+const newItem5:  ItemDefinition = {
+    id: 5,
+    name: 'potion',
+    category: 'consumable',
+    buyPrice: 20,
+    sellPrice: 10,
+    stackable: true
+}
+
+Exercise 3
+export interface Repository<T> {
+    create(item: T):Promise<T>;
+    update(id: number, item: Partial<T>):Promise<T> | null;
+    delete(id: number):Promise<boolean>;
+    findById(id: number):Promise<T> | null;
+    getAll():Promise<T[]>;
+}
+
+Exercise 4
+import { type ItemDefinition } from "./excersise-02-items";
+
+export interface Reward {
+    coins: number;
+    xp: number;
+    energy: number;
+    items: ItemDefinition[];
+}
+
+export type WorkResult = 
+  | {
+      ok: true;
+      reward: Reward;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
+Exercise 5
+import type { ItemDefinition } from "./excersise-02-items";
+import type { WorkResult } from "./excersise-04-professionRewards";
+
+// --- Domain Entities (For Reference) ---
+export interface User {
+    id: string; // Discord User ID
+    username: string;
+    coins: number;
+    xp: number;
+    level: number;
+    energy: number;
+}
+
+export interface InventoryItem {
+    userId: string;
+    itemId: number;
+    quantity: number;
+}
+
+// --- Data Repositories (Database Layer) ---
+export interface UserRepository {
+    getUser(userId: string): Promise<User | null>;
+    createUser(user: User): Promise<User>;
+    updateUser(userId: string, data: Partial<User>): Promise<User>;
+}
+
+export interface InventoryRepository {
+    getInventory(userId: string): Promise<InventoryItem[]>;
+    addItem(userId: string, itemId: number, quantity: number): Promise<InventoryItem>;
+    removeItem(userId: string, itemId: number, quantity: number): Promise<boolean>;
+    hasItem(userId: string, itemId: number, quantity: number): Promise<boolean>;
+}
+
+// --- Game Services (Business Logic Layer) ---
+export interface ProfessionService {
+    gather(userId: string, profession: "woodcutting" | "mining" | "fishing"): Promise<WorkResult>;
+    craftItem(userId: string, itemId: number): Promise<WorkResult>;
+}
+
+export interface ShopService {
+    buyItem(userId: string, itemId: number, quantity: number): Promise<WorkResult>;
+    sellItem(userId: string, itemId: number, quantity: number): Promise<WorkResult>;
+    getShopCatalog(): Promise<ItemDefinition[]>;
+}

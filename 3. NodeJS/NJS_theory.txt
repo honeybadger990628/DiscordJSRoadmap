@@ -1,0 +1,313 @@
+Core concepts:
+
+-Runtime vs language
+Node.js is a runtime environment. Provides the execution environment to run JS outside of the browser.
+
+-Event Loop
+Core mechanism that allows node to perform non-blocking I/O operations despite JS being single-threaded.
+Every iteration of the loop is called a tick. The loop consists in 6 phases:
+    -Timers: Executes callbacks scheduled by setTimeout() and setInterval().
+    -Pending callbacks: Executes I/O callbacks deferred from the previous iteration.
+    -Idle, prepare: Used for housekeeping.
+    -Poll: Retrieves new I/O events and runs their callbacks.
+    -Check: Executes callbacks registered via setImmediate() after the poll phase.
+    -Close callbacks: Handles cleanup and resource closures.
+E.g. of the order:
+Code in JS:
+const fs = require('fs');
+
+console.log('1. Start');
+
+setTimeout(() => console.log('2. Timer'), 0);
+setImmediate(() => console.log('3. Immediate'));
+process.nextTick(() => console.log('4. NextTick'));
+Promise.resolve().then(() => console.log('5. Promise'));
+
+fs.readFile(__filename, () => {
+    console.log('6. I/O Read');
+});
+
+console.log('7. End');
+
+Output order:
+1. Start
+7. End
+4. NextTick
+5. Promise
+2. Timer
+3. Immediate
+6. I/O Read
+
+Why does it execute in this order?Synchronous tasks (1 and 7) run instantly on the main call stack, locking execution until finished.
+Micro-tasks run as soon as the main stack empties: process.nextTick (4) fires first, followed by the resolved Promise (5).
+The Event Loop begins: The Timers phase executes the expired setTimeout callback (2).
+Check phase: The loop processes setImmediate (3).
+Poll phase: The file-reading operation finishes in the background, and its callback (6) runs when the loop reaches the Poll phase.
+
+-Call Stack
+Mechanism provided by the V8 engine that tracks the execution of Synchronous code usin LIFO structure.
+    -Stack Overflow: RangeError raised whenever a function calls itself recursively and adds frames to the stack without clearing them exceeding the fixed memory for the stack.
+    -Block the thread: Happens when the stack is executing a heavy task thus node cannot process any requests.
+The stack delegates asynchronous routines away from the main thread.
+E.g.
+
+Javascript:
+console.log("Start");
+
+setTimeout(() => {
+  console.log("Async Task");
+}, 0);
+
+console.log("End");
+
+Despite setting the timer to 0 milliseconds, the execution relies on a multi-part choreography:
+1.console.log("Start") is pushed to the Call Stack, prints to the terminal, and pops off.
+2.setTimeout is pushed to the Call Stack. Instead of pausing execution, Node.js registers the timer via its internal C++ background components (managed by libuv) and immediately pops setTimeout off the stack.
+3.console.log("End") is pushed to the Call Stack, prints, and pops off.
+4.The Event Loop takes over once the Call Stack becomes completely empty. It monitors the Callback/Task Queue where the completed setTimeout callback function is waiting.
+5.The Callback is pushed onto the newly freed Call Stack by the Event Loop. It executes console.log("Async Task") and finally exits.
+
+Output order:
+Start
+End
+Async Task
+
+-Event Queue
+There are multiple queues to execute callbacks in a strict order.
+    -Microtask queues: The event loop checks if this 2 queues are empty since they're high-priority queues, if a task is added the new task is executed before the loop continues.
+        1. nextTick queue (FIFO): Holds callbacks of .nextTick(), is the highest priority of both queues.
+        2. Promise queue (FIFO): Holds resolved or rejected Promise callbacks like .then() .catch() this queue executes immediately after the nextTick queue empties.
+    -Macrotasks: This is the queue for the 6 phases of the main loop.
+        1. Timers phase: Contains setTimeout() and setInterval(), manages a min-heap structure (Binary tree that cycles through the least value of each children).
+        2. Pending callbacks phase: Executes deferred I/O callbacks, suck as system errors.
+        3. Idle, prepare phase: Use for node for engine optimization.
+        4. Poll phase: Retrieves new I/O events. The loop will block here and wait if there are no timers or other immediate tasks pending.
+        5. Check phase: Processes callbacks by setImmediate(), it is for the devs to execute just after the poll.
+        6. Close callbacks phase: Destruction and cleanup of connections, executing callbacks for events like socket.on('close')
+
+-Non-blocking I/O
+This are tasks that can be handled concurrently without stopping execution to wait for data. When node executes an I/O task it hands the operation to the underlying architecture instead of idling.
+    1. Request: JS engine initializes an I/O reqest along with a callback or promise.
+    2. Delegation: Node passes the request to libuv, which interacts with the SO using non-blocking kernel mechanisms (epoll on Linux or IOCP on Windows).
+    3. Continuous execution: The main JS thread proceeds to the next line of code, remaining responsive to other requests.
+    4. The event loop: Once the OS complete the background task, libuv places the callback into a queue. The event loop monitors this queue and pushes the callback onto the main thread to run when it's free.
+
+Blocking vs non-blocking:
+    -Blocking example:
+        const fs = require('fs');
+
+        console.log("Starting...");
+        // Stops execution here until file is completely read
+        const data = fs.readFileSync('large_file.txt', 'utf8'); 
+        console.log(data);
+        console.log("Finished!");
+
+        Expected Output Order: Starting... → (File Content) → Finished!
+
+    -Non-blocking example:
+        const fs = require('fs');
+
+        console.log("Starting...");
+        // Handed off to the OS background; execution keeps moving
+        fs.readFile('large_file.txt', 'utf8', (err, data) => {
+            if (err) throw err;
+            console.log(data);
+        });
+        console.log("Finished!"); 
+
+        Expected Output Order: Starting... → Finished! → (File Content arrives later)
+
+Non-blocking has the advantages of high scalability, no thread overhead and it has optimized throughput
+
+-Modules
+Packages that can be used, in this case, it depends of what the bot requires.
+Core & environmentals:
+    -discord.js to connect to the discord API
+    -dotenv for loading the token and other sensitive data from a .env file
+    -nodemon automatically restart the bot whenever you save a code change
+Voice & audio
+    -@discord.js/voice to handle audio streams and voice connections.
+    -prism-media handles audio transcoding
+    -sodium-native to high-speed packet encryption for voice data
+    -opusscript audio engine to encode voice streams
+Database & storage
+    -Keyv to pair with SQLite, MongoDB or Redis
+    -Mongoose is the premier module to store everything in MongoDB
+    -Sequelize is a SQL engine like PostgreSQL or MySQL
+    -iosredis is the best Redis client for node
+    -cron manages background tasks like daily rewards or stock market updates
+Utilities & Helpers
+    -Day.js alternative to Moment.js for calculating account ages, cooldowns and timestamps
+    -ms converts human time strings to milliseconds for mute durations or temp-bans
+    -axios is a HTTP client for fetching data from external APIS like weather data or meme images
+
+For prventing the infinite money exploit one must use concurrency. This can be fixed by:
+    1. Redlock: Lock user's ID in redis the milisecond they trigger the command, reject any incoming commands for that user until the current transacion completes and the lock releases.
+    2. MongoDB atomic operators: Never read a balance, add it in javascript and save it back, use atomic queries like $inc
+        // Safe from race conditions
+        await UserSchema.updateOne({ userId: "123" }, { $inc: { wallet: 50 } });
+
+Recommended MongoDB Schema Setup
+Keep your database lean. Index your userId and guildId fields to ensure queries stay lightning-fast as your database grows.javascriptconst UserEconomySchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true, index: true },
+  wallet: { type: Number, default: 0, min: 0 },
+  bank: { type: Number, default: 0, min: 0 },
+  lastDaily: { type: Date, default: null }
+});
+
+-npm
+Node Package Manager is a tool to install libraries. For a discord bot.
+
+1. Core dependencies
+For a bot that includes mongodb, redis, .env the dependencies required are:
+    npm install discord.js mongoose ioredis dotenv rate-limiter-flexible
+-Mongoose & ioredis: For your database and caching layers.
+-rate-limiter-flexible: Connects with Redis to block spam before it hits 
+-MongoDB.dotenv: Keeps your secret Discord tokens and database passwords safe.
+
+2. DevDependencies
+Some tools are only needed while you are actively writing code, not when the bot is live. Install these using the --save-dev flag:
+    npm install --save-dev nodemon
+nodemon: Monitors your files. The moment you change code, it restarts your bot instantly.
+
+3. Security & audit rules
+Because your bot will handle sensitive user data, security is paramount. NPM provides built-in tools to protect you:
+-npm audit: Run this frequently. It scans your entire project for known security vulnerabilities in your installed packages.
+-npm audit fix: If vulnerabilities are found, this command automatically upgrades weak packages to safe versions without breaking your code.
+-package-lock.json: Never delete or ignore this file. Commit it to GitHub. It locks down the exact sub-version of every package you use, ensuring your bot doesn't randomly break when deployed to a server.
+
+4. Managing Updates safely
+Avoid using npm update blindly, as major version updates can break your code structure.
+Use npm outdated to see what packages have newer versions, then upgrade them intentionally.
+
+-package.json
+Is the heart of the node project. It tells the server  who made the bot, how to run it and what external libraries it needs to downlowd to function.
+This is an example of a production-ready package.json tailored for the bot:
+{
+  "name": "discord-economy-bot",
+  "version": "1.0.0",
+  "description": "High-performance Discord economy bot using MongoDB and Redis caching",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "discord.js": "^14.17.3",
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.5.0",
+    "mongoose": "^8.10.1",
+    "rate-limiter-flexible": "^5.0.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "economy",
+    "mongodb",
+    "redis"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
+
+Critical fields:
+    -"main": "indes.js" //Defines the entry point of the app, which js file to execute first.
+    -"type": "commonjs" //Defines how to import files.
+    -"scripts" //Write aliases here instead of long execution paths. You trigger them using npm run <script-name>
+    -"dependencies" vs "devDependencies" //Dependencies are packages to run the bot. DevDependencies are tools used while writing code.
+The moment you run npm install, a second file called package-lock.json is generated.Never edit or delete this file manually.
+
+-node_modules
+Folder that is the physical storage locker of the project. It's created and downloaded when you run npm install discord.js
+There are certain considerations with the node_modules folder:
+    1. Never edit anything inside the folder.
+    2. Never push the folder to GitHub
+    3. If you want to delete some packages from there run npm prune to scan your code, look at the package.json and delete unused folders from node_modules
+
+-Environment variables (.env)
+Dynamic variable that lives outside of the app's code, they're used to store secrets, keys and tokens like Discord Bot Token, monboDB connection string and Redis password.
+How to implement it:
+    1. Install the dotenv module via the command npm install dotenv
+    2. Create a .env file right next to the package.json and node_modules, the file must be called ".env" inside the structure should be something like this:
+    DISCORD_TOKEN=MTI0NTY3ODkwMTIzNDU2Nzg5.G6_abc.123XYZ...
+    MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/economy
+    REDIS_URL=redis://:password@127.0.0.1:6379
+    CLIENT_ID=123456789012345678
+    3. Use them in the discord.js code, example code for that:
+        // 1. Load environment variables at the absolute top of your file
+        require('dotenv').config();
+
+        const { Client, GatewayIntentBits } = require('discord.js');
+        const mongoose = require('mongoose');
+        const Redis = require('ioredis');
+
+        // 2. Initialize your clients using process.env
+        const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+        const redis = new Redis(process.env.REDIS_URL);
+
+        client.once('ready', async () => {
+            console.log(`🤖 Logged in as ${client.user.tag}!`);
+            
+            // Connect to MongoDB safely
+            try {
+                await mongoose.connect(process.env.MONGODB_URI);
+                console.log('🗃️ Connected to MongoDB safely.');
+            } catch (err) {
+                console.error('❌ MongoDB Connection Error:', err);
+            }
+        });
+
+        // 3. Log in using your hidden token
+        client.login(process.env.DISCORD_TOKEN);
+
+Modules
+    -fs: Allows your bot to read, write, and scan files and folders on your hard drive.
+    -path: Ensures that file paths work perfectly on any operating system (Windows uses backslashes \, while Linux/Mac use forward slashes /). path.join() fixes this automatically.
+    -os: Provides information about the host machine's hardware (CPU, RAM, uptime).
+    -process: Provides control over the currently running Node.js application instance. You already use this via process.env to read your .env tokens!
+    -crypto: That module handles data encryption, decryption, hashing, and random number generation.
+
+    Examples:
+    fs & path:
+        const fs = require('fs');
+        const path = require('path');
+
+        // Target the "commands" folder reliably on Windows or Linux
+        const commandsPath = path.join(__dirname, 'commands');
+
+        // Read all JavaScript files inside that folder
+        const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+        for (const file of commandFiles) {
+            console.log(`📡 Found economy command file: ${file}`);
+            // Your bot will then load each file dynamically here
+        }
+    os & process:
+        const os = require('os');
+
+        // In your /stats command:
+        const freeMemory = os.freemem() / 1024 / 1024; // Convert bytes to Megabytes
+        console.log(`Current free system RAM: ${freeMemory.toFixed(2)} MB`);
+
+        // Graceful shutdown handling (in case of server restarts)
+        process.on('SIGINT', async () => {
+            console.log('⚠️ Bot is shutting down. Saving data and closing connections...');
+            await mongoose.connection.close();
+            await redis.quit();
+            process.exit(0);
+        });
+    crypto:
+        const crypto = require('crypto');
+
+        // ❌ UNSAFE FOR GAMBLING: Predictable over time
+        const unsafeRoll = Math.floor(Math.random() * 100); 
+
+        //  SAFE FOR GAMBLING: Cryptographically secure number between 0 and 99
+        const safeRandomInt = crypto.randomInt(0, 100); 
+
+        console.log(`The secure dice roll is: ${safeRandomInt}`);
